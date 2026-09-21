@@ -1,35 +1,50 @@
-<!doctype html><html lang="it"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111"><link rel="manifest" href="manifest.json"><title>SETTANTA Training</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f5f4f1;color:#151515;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif}
-.app{max-width:760px;margin:auto;padding:24px 16px 35px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.brand{font-weight:800;letter-spacing:.12em;font-size:14px}.phase{font-size:11px;color:#777}h1{font-size:32px;margin:5px 0}.sub{color:#777;font-size:14px;margin-bottom:18px}
-.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.day{border:1px solid #e4e1dc;background:white;border-radius:12px;padding:9px 2px;text-align:center;font-size:11px}.day.active{background:#111;color:#fff}.day small{display:block;font-size:8px;opacity:.65}
-.card{background:white;border:1px solid #e4e1dc;border-radius:18px;padding:16px;margin-top:12px}.top{display:flex;justify-content:space-between;gap:12px}.title{font-size:21px;font-weight:750}.meta{font-size:12px;color:#777;margin-top:3px}.start,.complete{background:#111;color:white;border:0;border-radius:12px;padding:12px 15px;font-weight:700}.exercise{border-top:1px solid #e4e1dc;padding:14px 0}.exercise:first-child{border-top:0}.exhead{display:flex;justify-content:space-between}.exname{font-weight:700}.tag,.rx,.notes{font-size:12px;color:#777}.rx{margin-top:4px}.sets{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}.set{border:1px solid #e4e1dc;background:#faf9f7;border-radius:9px;padding:8px 11px;font-size:12px}.set.done{background:#111;color:#fff}.complete{width:100%;margin-top:8px}.timer{position:fixed;left:12px;right:12px;bottom:14px;background:#111;color:#fff;border-radius:18px;padding:14px 16px;display:none;box-shadow:0 10px 35px #0004}.timer.show{display:block}.timerrow{display:flex;align-items:center;justify-content:space-between}.time{font-size:30px;font-variant-numeric:tabular-nums}.timer button{border:0;border-radius:10px;padding:9px 11px;margin-left:5px}.ghost{background:#333;color:#fff}.light{background:#fff;color:#111}
-</style></head><body><div class="app"><header><div class="brand">SETTANTA TRAINING</div><div class="phase">BLOCCO 1 · 6 SETTIMANE</div></header>
-<h1>Allenamento</h1><div class="sub">Costruzione muscolare · fisico atletico · progressione</div><div id="days" class="days"></div><div id="content"></div>
-<div id="timer" class="timer"><div class="timerrow"><div><div style="font-size:11px;opacity:.65">RECUPERO</div><div id="time" class="time">02:00</div></div><div><button class="ghost" onclick="addTime(30)">+30s</button><button class="light" onclick="stopTimer()">Chiudi</button></div></div></div></div>
-<script>
-const P={
-lun:["LUN","Push","Petto · Spalle · Tricipiti",[["Panca piana bilanciere","Petto","3×6–8",150],["Panca inclinata manubri","Petto","3×8–10",120],["Shoulder press manubri","Spalle","3×8–10",120],["Alzate laterali","Spalle","3×12–15",75],["Pushdown al cavo","Tricipiti","3×10–12",75],["Estensioni tricipiti sopra testa","Tricipiti","2×10–12",75]]],
-mar:["MAR","Pull","Schiena · Deltoidi posteriori · Bicipiti",[["Trazioni assistite","Schiena","3×6–10",150],["Lat machine","Schiena","3×8–12",120],["Pulley / rematore","Schiena","3×8–12",120],["Reverse fly","Deltoidi posteriori","3×12–15",75],["Curl alternato manubri","Bicipiti","3×8–12",75],["Curl al cavo con barra","Bicipiti","2×10–12",75]]],
-mer:["MER","Riposo","Recupero",[]],
-gio:["GIO","Upper + Gambe A","Petto · Gambe · Spalle · Addome",[["Chest press","Petto","3×8–12",120],["Croci cavi / manubri","Petto","2×10–15",75],["Leg press","Gambe","3×8–12",150],["Leg curl","Gambe","3×10–12",90],["Alzate laterali","Spalle","3×12–15",75],["Crunch al cavo","Addome","3×10–15",60]]],
-ven:["VEN","Upper + Gambe B","Schiena · Gambe · Braccia",[["Lat machine presa neutra","Schiena","3×8–12",120],["Rematore / pulley","Schiena","3×8–12",120],["Romanian deadlift","Gambe","3×8–10",150],["Leg extension","Gambe","3×10–15",90],["Calf raise","Polpacci","3×12–15",75],["Curl al cavo","Bicipiti","2×10–12",75],["Pushdown","Tricipiti","2×10–12",75]]],
-sab:["SAB","Spalle + Addome + Corsa","Spalle · Core · Aerobico",[["Shoulder press","Spalle","3×8–10",120],["Alzate laterali","Spalle","4×12–15",75],["Reverse fly","Deltoidi posteriori","3×12–15",75],["Plank","Addome","3×30–60 sec",60],["Leg raise","Addome","3×8–12",60]]],
-dom:["DOM","Riposo","Recupero",[]]};
-const order=["lun","mar","mer","gio","ven","sab","dom"];let day=localStorage.day||"lun",timer,rem;
-function fmt(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
-function render(){let p=P[day],h=order.map(k=>`<button class="day ${k==day?"active":""}" onclick="sel('${k}')">${P[k][0]}<small>${P[k][1].split(" ")[0]}</small></button>`).join("");document.querySelector("#days").innerHTML=h;
-let done=JSON.parse(localStorage["done_"+day]||"[]");let c=`<div class="card"><div class="top"><div><div class="title">${p[1]}</div><div class="meta">${p[2]}</div></div>${p[3].length?'<button class="start" onclick="start()">START</button>':''}</div>`;
-if(!p[3].length)c+=`<div style="padding:28px 0 8px;font-size:18px">🛌 Recupero</div><div class="notes">Passeggiata tranquilla facoltativa.</div>`;
-p[3].forEach((e,i)=>{let n=parseInt(e[2]);c+=`<div class="exercise"><div class="exhead"><div class="exname">${i+1}. ${e[0]}</div><div class="tag">${e[1]}</div></div><div class="rx">${e[2]} · recupero ${fmt(e[3])}</div><div class="sets">${Array.from({length:n},(_,s)=>`<button class="set ${done.includes(i+"-"+s)?"done":""}" onclick="toggle(${i},${s})">Serie ${s+1}</button>`).join("")}</div></div>`});
-if(day=="sab")c+=`<div class="exercise"><div class="exname">🏃 Corsa facile</div><div class="rx">25–35 minuti · ritmo conversazionale</div></div>`;
-if(p[3].length)c+=`<button class="complete" onclick="alert('Allenamento completato ✓');localStorage['finished_'+day]=new Date().toISOString()">Completa allenamento ✓</button>`;
-c+=`</div><div class="card notes"><b>Progressione:</b> settimane 1–2: 2–3 RIR · settimane 3–4: ~2 RIR · settimane 5–6: 1–2 RIR. Quando raggiungi il limite alto con tecnica pulita, aumenta leggermente il carico.</div>`;
-document.querySelector("#content").innerHTML=c}
-function sel(k){day=k;localStorage.day=k;render()}function toggle(i,s){let a=JSON.parse(localStorage["done_"+day]||"[]"),x=i+"-"+s;a.includes(x)?a=a.filter(v=>v!=x):a.push(x);localStorage["done_"+day]=JSON.stringify(a);render()}
-function start(){startTimer(P[day][3][0][3])}function startTimer(s){clearInterval(timer);rem=s;document.querySelector("#timer").classList.add("show");document.querySelector("#time").textContent=fmt(rem);timer=setInterval(()=>{rem--;document.querySelector("#time").textContent=fmt(Math.max(0,rem));if(rem<=0){clearInterval(timer);navigator.vibrate?.([200,100,200])}},1000)}
-function addTime(s){rem+=s;document.querySelector("#time").textContent=fmt(rem)}function stopTimer(){clearInterval(timer);document.querySelector("#timer").classList.remove("show")}
-render();
-</script></body></html>
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SETTANTA Training</title>
+<meta name="theme-color" content="#f5f4f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Training">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="app.css?v=3.0.0">
+</head>
+<body>
+<div class="app">
+  <header class="head">
+    <div class="brand"><img src="icons/icon-192.png" alt="" width="34" height="34"><span>SETTANTA<br>TRAINING</span></div>
+    <button id="weekBadge" class="week" type="button"></button>
+  </header>
+  <nav class="tabs" role="tablist">
+    <button type="button" data-view="oggi" class="on">Allenamento</button>
+    <button type="button" data-view="storico">Storico</button>
+    <button type="button" data-view="impostazioni">Impostazioni</button>
+  </nav>
+  <main id="view"></main>
+</div>
+
+<div id="timer" class="timer" aria-live="polite">
+  <div class="timer-bar"><i id="timerFill"></i></div>
+  <div class="timer-row">
+    <div class="timer-txt">
+      <div id="timerLabel" class="timer-label">RECUPERO</div>
+      <div id="timerTime" class="timer-time">00:00</div>
+      <div id="timerNext" class="timer-next"></div>
+    </div>
+    <div class="timer-btns">
+      <button type="button" data-t="-15">−15</button>
+      <button type="button" data-t="15">+15</button>
+      <button type="button" data-t="stop" class="lime">Salta</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js?v=3.0.0"></script>
+</body>
+</html>
